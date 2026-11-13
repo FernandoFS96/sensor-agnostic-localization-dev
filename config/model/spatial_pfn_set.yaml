@@ -1,0 +1,14 @@
+# Spatial PFN with the sensor-set front end (SensorSetEncoder) and array-centered
+# labels. Train with data.rot_aug=true.
+defaults:
+  - spatial_pfn
+  - _self_
+
+name: spatial_pfn_set
+frame: centroid
+# Predictive-variance floor in m^2 (0.1 m sd per axis). The default floor, 1e-3
+# in normalized units, is a 6 m sd at the benchmarks' 193 m label scale and binds
+# on most points once errors reach a few meters.
+var_floor_phys: 0.01
+spatial:
+  encoder: set

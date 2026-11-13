@@ -1,25 +1,32 @@
-# Only code and configuration are tracked. Datasets are regenerated with
-# data/generate.py and data/process_data.py; training runs and evaluation
-# results go to output/.
+# Private development repository. Code, configuration and scripts are tracked;
+# datasets, run outputs, manuscripts and reports stay local.
 
 /*
 !/.gitignore
 !/README.md
-!/splits/
 !/requirements.txt
 !/config/
 !/src/
 !/scripts/
 !/data/
 !/paper/
+!/splits/
+!/scratch/
 
-# data/: generation and processing code only
+# data/: generation, processing and inspection code only
 /data/*
 !/data/*.py
+!/data/utils/
 
 # paper/: table and figure scripts only
 /paper/*
 !/paper/scripts/
+
+# scratch/: launch and analysis scripts only
+/scratch/**
+!/scratch/**/
+!/scratch/**/*.py
+!/scratch/**/*.sh
 
 *.bak
 __pycache__/
