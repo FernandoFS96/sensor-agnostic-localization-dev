@@ -1,0 +1,4 @@
+# Topology task, Hermite trajectories.
+task: topology
+method: hermite
+mode: null

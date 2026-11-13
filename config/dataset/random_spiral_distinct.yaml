@@ -1,0 +1,4 @@
+# Random-layout task, spiral trajectories, separate trajectories per deployment.
+task: random
+method: spiral
+mode: distinct

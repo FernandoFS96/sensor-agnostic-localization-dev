@@ -1,0 +1,8 @@
+# PFN with the spatial front end.
+defaults:
+  - pfn
+  - _self_
+
+name: spatial_pfn
+spatial:
+  enabled: true
