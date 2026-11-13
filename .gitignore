@@ -12,6 +12,7 @@
 !/paper/
 !/splits/
 !/scratch/
+!/notes/
 
 # data/: generation, processing and inspection code only
 /data/*
