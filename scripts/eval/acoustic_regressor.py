@@ -88,6 +88,13 @@ def extract(data_dir, cache):
 # --------------------------------------------------------------------------- #
 # Model
 # --------------------------------------------------------------------------- #
+def f32(head, h):
+    """An output head in float32. Training runs under a bfloat16 autocast, whose
+    8 significant bits would round a coordinate of 200 to 400 m to steps of 1.5 m."""
+    with t.autocast("cuda", enabled=False):
+        return head(h.float())
+
+
 class AttnOnlyLayer(nn.Module):
     """Pre-norm self-attention with a residual and no feed-forward sublayer, as the
     mixing layers of the NPs' SpatialEncoder (--no-ffn)."""
@@ -139,11 +146,11 @@ class SensorSetRegressor(nn.Module):
         if self.summary == "pool":
             h = self.mix(h, kpm)
             q = self.query.expand(len(h), -1, -1)
-            return self.out(self.pool(q, h, h, key_padding_mask=kpm, need_weights=False)[0][:, 0])
+            return f32(self.out, self.pool(q, h, h, key_padding_mask=kpm, need_weights=False)[0][:, 0])
         h = t.cat([self.cls.expand(len(h), -1, -1), h], 1)
         if kpm is not None:
             kpm = t.cat([t.zeros(len(h), 1, dtype=t.bool, device=h.device), kpm], 1)
-        return self.out(self.mix(h, kpm)[:, 0])
+        return f32(self.out, self.mix(h, kpm)[:, 0])
 
 
 class Net(nn.Module):
@@ -172,7 +179,7 @@ class Net(nn.Module):
             p = self.pe(pos) if self.pe is not None else pos / SCALE
             return self.body(p, feat, mask)
         x = feat.transpose(1, 2).reshape(len(feat), 1, -1)   # back to tau-major flat
-        return self.head(self.enc(x, pos, mask)[:, 0])
+        return f32(self.head, self.enc(x, pos, mask)[:, 0])
 
 
 def gaussian(out, A):
@@ -251,8 +258,7 @@ def predict(net, D, A, n_transits=None):
         idx = t.arange(a, min(a + 8192, n * D["ppt"]), device=D["sp"].device)
         pos, F, _, c = batch(D, idx, A, train=False)
         mask = D["mask"][idx // D["ppt"]] if "mask" in D else None
-        with t.autocast("cuda", dtype=t.bfloat16):
-            out = net(pos, F, mask).float()
+        out = net(pos, F, mask)                        # float32: bfloat16 is for training only
         mu, var = gaussian(out, A)
         d = mu * SCALE + c - D["y"].view(-1, 2)[idx]
         errs.append(d.norm(dim=-1))

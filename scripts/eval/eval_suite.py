@@ -39,6 +39,13 @@ def load_model(path, device):
     # Rebuilds the model with the options it was trained with, loads the
     # weights and switches to eval mode.
     model, conv = model_from_checkpoint(ck, device)
+    # Evaluate in float32: the bfloat16 autocast of the sensor-set encoders is a
+    # training speed-up and rounds the features (0.02 m on B2 for the PFN).
+    # EVAL_BF16=1 keeps it, to reproduce numbers obtained before 16 Nov 2026.
+    if os.environ.get("EVAL_BF16", "0") != "1":
+        for m in model.modules():
+            if hasattr(m, "bf16"):
+                m.bf16 = False
     if conv == "online":
         raise SystemExit(f"{path}: online_ranp is not covered by eval_suite "
                          "(use scripts/eval/eval_np_geometry.py).")
