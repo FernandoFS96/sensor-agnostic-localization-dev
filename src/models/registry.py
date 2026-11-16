@@ -8,9 +8,10 @@ from . import anp as anp_mod
 from . import r_anp as ranp_mod
 from . import online_r_anp as online_mod
 from . import pfn as pfn_mod
+from . import ctxreg as ctxreg_mod
 from .frame import CentroidFrame
 
-ARCHS = ("cnp", "anp", "pfn", "ranp", "rcnp", "online_ranp")
+ARCHS = ("cnp", "anp", "pfn", "ctxreg", "ranp", "rcnp", "online_ranp")
 LATENT_ARCHS = ("anp", "ranp", "online_ranp")   # posterior + KL term
 
 
@@ -61,6 +62,11 @@ def _build(name, num_hidden, input_dim, output_dim, *, rnn_type, rnn_layers, rnn
                                 spatial_cfg=spatial_cfg, n_layers=n_layers,
                                 n_heads=n_heads, ffn_mult=ffn_mult,
                                 readout=readout, n_cross_layers=n_cross_layers), "split"
+    if name == "ctxreg":  # context-conditioned regressor; options under spatial_cfg
+        if full_cov:
+            raise ValueError("full_cov is not implemented for ctxreg")
+        return ctxreg_mod.ContextRegressor(num_hidden, input_dim, output_dim, dropout=dropout,
+                                           spatial_cfg=spatial_cfg), "split"
     if name == "cnp":
         return anp_mod.DeterministicModel(num_hidden, input_dim, output_dim,
                                           dropout=dropout, spatial_cfg=spatial_cfg,

@@ -703,7 +703,7 @@ def main(cfg: DictConfig):
     excl_ctx = ctx.get("exclude_from_target", True)
     # Per-sample context sizes need the padding and target masks, which only the
     # split models (cnp / anp / pfn) handle.
-    MASKED_ARCHS = ("cnp", "anp", "pfn")
+    MASKED_ARCHS = ("cnp", "anp", "pfn", "ctxreg")
     per_sample = bool(ctx.get("per_sample", False))
     if per_sample and arch not in MASKED_ARCHS:
         raise SystemExit(
@@ -873,7 +873,21 @@ def main(cfg: DictConfig):
 
     opt = t.optim.AdamW(model.parameters(), lr=cfg.training.lr,
                         weight_decay=cfg.training.weight_decay)
-    sched = t.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg.training.epochs)
+    # Cosine decay over the epochs; with training.warmup_epochs = w > 0 the rate
+    # first rises linearly (lr / w in epoch 1, lr in epoch w) and the cosine
+    # covers the remaining epochs.
+    warmup = int(cfg.training.get("warmup_epochs", 0) or 0)
+    if warmup > 0:
+        n_ep = int(cfg.training.epochs)
+
+        def _lr_factor(k):                            # k = epochs completed
+            if k < warmup:
+                return (k + 1) / warmup
+            return 0.5 * (1.0 + np.cos(np.pi * (k - warmup) / max(1, n_ep - warmup)))
+        sched = t.optim.lr_scheduler.LambdaLR(opt, _lr_factor)
+        print(f"[{model_name}] learning-rate warm-up over {warmup} epochs")
+    else:
+        sched = t.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg.training.epochs)
 
     # Resolved config snapshot for reproducibility.
     with open(os.path.join(out_dir, "config.yaml"), "w") as f:

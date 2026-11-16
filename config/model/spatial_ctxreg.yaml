@@ -1,0 +1,28 @@
+# Context-conditioned regressor (ctxreg.ContextRegressor): a no-context
+# sensor-set regressor whose sensor tokens receive a deployment embedding
+# computed from the context, through a gate initialized to zero. Array-centered
+# labels; train with data.rot_aug=true.
+defaults:
+  - _spatial
+  - _self_
+
+arch: ctxreg
+name: spatial_ctxreg
+num_hidden: 256      # not used by the model (its width is spatial.set_d_model); kept for the run name
+dropout: 0.0
+frame: centroid
+var_floor_phys: 0.01 # m^2, as spatial_pfn_set
+spatial:
+  enabled: true
+  encoder: set
+  ctx_gate: true       # false: no context branch (the plain regressor)
+  # summary: one deployment embedding added to the target's sensor tokens (a CNP)
+  # attn: the target's readout token attends to the individual context tokens
+  #       before every encoder layer (PFN-like) | both
+  ctx_mode: summary
+  ctx_layers: 6        # depth of the context points' sensor-set encoder
+  ctx_pool_layers: 2   # transformer over the context points (0: none, attn mode only)
+  ctx_drop: 0.1        # training: probability of hiding a sample's whole context
+  # Lighter variants (attn mode: 12.95 M parameters with the defaults):
+  ctx_share: false     # true: one sensor encoder for context and target points (8.2 M)
+  ctx_attn_layers: null  # target-encoder layers (from 1) preceded by a context attention; null = all

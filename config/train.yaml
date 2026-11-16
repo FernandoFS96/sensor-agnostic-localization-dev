@@ -25,6 +25,9 @@ training:
   batch_size: 128
   lr: 5.0e-5
   weight_decay: 1.0e-4
+  # Linear learning-rate warm-up over this many epochs before the cosine decay
+  # (0 disables it: plain cosine from lr).
+  warmup_epochs: 0
   # KL weight for the latent models. The KL is normalized to per-point units,
   # so beta=1 is the standard ELBO.
   beta: 1.0
